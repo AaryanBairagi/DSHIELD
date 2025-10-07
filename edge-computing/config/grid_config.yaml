@@ -1,0 +1,157 @@
+# DHSILED Grid Configuration
+# Grid-specific settings for edge processing node
+
+# ============================================================================
+# GRID IDENTIFICATION
+# ============================================================================
+grid:
+  id: "G01"  # Unique grid identifier (G01-G48)
+  zone_type: "stand"  # Options: stand, concourse, exit, emergency
+  area_sqm: 750  # Grid area in square meters (25m x 30m)
+  capacity: 200  # Maximum safe capacity
+  location:
+    section: "North Stand"
+    level: 1
+    position:
+      x: -75  # X coordinate in stadium 3D space
+      y: 5    # Y coordinate (height)
+      z: -60  # Z coordinate
+
+# ============================================================================
+# CROWD DENSITY THRESHOLDS
+# ============================================================================
+density_thresholds:
+  normal: 60      # 0-60 people - Normal crowd level
+  moderate: 100   # 61-100 people - Moderate density
+  high: 150       # 101-150 people - High density, monitor closely
+  critical: 200   # 151+ people - Critical, stampede risk
+
+# ============================================================================
+# CAMERA CONFIGURATION
+# ============================================================================
+camera:
+  device_index: 0  # Camera device index (0, 1, 2...)
+  width: 1920      # Frame width in pixels
+  height: 1080     # Frame height in pixels
+  fps: 30          # Frames per second
+  rotation: 0      # Rotation angle (0, 90, 180, 270)
+  flip_horizontal: false
+  flip_vertical: false
+  brightness: 50   # Brightness adjustment (0-100)
+  contrast: 50     # Contrast adjustment (0-100)
+
+# ============================================================================
+# ML MODELS CONFIGURATION
+# ============================================================================
+models:
+  people_counter: "models/yolov8n.pt"  # YOLOv8 model path
+  behavior_analyzer: "models/behavior_lstm.h5"  # Behavior model path
+  emergency_detector: "models/emergency_cnn.h5"  # Emergency model path
+  confidence_threshold: 0.5  # Detection confidence threshold
+  sequence_length: 16  # Number of frames for temporal analysis
+
+# ============================================================================
+# MQTT BROKER SETTINGS
+# ============================================================================
+mqtt:
+  host: "localhost"  # MQTT broker hostname/IP
+  port: 1883         # MQTT broker port
+  username: null     # MQTT username (null if no auth)
+  password: null     # MQTT password (null if no auth)
+  ssl: false         # Use SSL/TLS encryption
+  keepalive: 60      # Keepalive interval in seconds
+  qos: 1             # Quality of Service (0, 1, 2)
+  topics:
+    base: "dhsiled/grids"
+    status: "dhsiled/grids/{grid_id}/status"
+    alerts: "dhsiled/grids/{grid_id}/alerts"
+    health: "dhsiled/grids/{grid_id}/health"
+    commands: "dhsiled/grids/{grid_id}/commands"
+
+# ============================================================================
+# PROCESSING CONFIGURATION
+# ============================================================================
+processing:
+  frame_skip: 0  # Skip N frames (0 = process every frame)
+  batch_size: 1  # Batch size for model inference
+  enable_people_counting: true
+  enable_behavior_analysis: true
+  enable_emergency_detection: true
+  behavior_analysis_interval: 16  # Analyze every N frames
+  emergency_check_interval: 1     # Check emergencies every N seconds
+
+# ============================================================================
+# DATA STORAGE SETTINGS
+# ============================================================================
+storage:
+  video_buffer_path: "data/video_buffer"
+  logs_path: "data/logs"
+  analytics_path: "data/analytics"
+  retention_hours: 24  # Keep data for N hours
+  save_critical_frames: true  # Save frames when alerts triggered
+  save_all_frames: false      # Save all frames (high storage!)
+  compression_quality: 85     # JPEG quality (0-100)
+
+# ============================================================================
+# DEVICE MONITORING
+# ============================================================================
+monitoring:
+  interval: 30  # Health check interval in seconds
+  thresholds:
+    cpu_temp: 80.0        # CPU temperature threshold (°C)
+    cpu_usage: 90.0       # CPU usage threshold (%)
+    memory_usage: 95.0    # Memory usage threshold (%)
+    disk_usage: 90.0      # Disk usage threshold (%)
+    network_errors: 100   # Network error threshold
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "data/logs/edge_processor.log"
+  max_bytes: 10485760  # 10MB per log file
+  backup_count: 5      # Keep 5 backup log files
+  console_output: true # Also log to console
+
+# ============================================================================
+# PERFORMANCE TUNING
+# ============================================================================
+performance:
+  use_gpu: false         # Use GPU acceleration if available
+  num_threads: 4         # Number of processing threads
+  optimize_inference: true  # Enable model optimization
+  use_quantization: false   # Use INT8 quantization
+
+# ============================================================================
+# ALERT CONFIGURATION
+# ============================================================================
+alerts:
+  cooldown_seconds: 60  # Minimum time between same alert type
+  enable_sound: false   # Enable audio alerts
+  enable_led: false     # Enable LED indicators
+  priority_levels:
+    critical: 1  # Highest priority
+    high: 2
+    medium: 3
+    low: 4
+
+# ============================================================================
+# NETWORK CONFIGURATION
+# ============================================================================
+network:
+  retry_attempts: 3      # Connection retry attempts
+  retry_delay: 5         # Delay between retries (seconds)
+  timeout: 30            # Network timeout (seconds)
+  max_queue_size: 1000   # Max messages to queue offline
+
+# ============================================================================
+# DEBUG & DEVELOPMENT
+# ============================================================================
+debug:
+  enable_mock_models: false  # Use mock models for testing
+  save_debug_images: false   # Save debug visualization images
+  show_preview: false        # Show camera preview window
+  simulate_alerts: false     # Generate fake alerts for testing
+  verbose_logging: false     # Extra detailed logs
