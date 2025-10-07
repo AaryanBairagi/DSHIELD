@@ -1,0 +1,42 @@
+# ============================================================================
+# DHSILED Backend - Python Dependencies
+# Install with: pip install -r requirements-backend.txt
+# ============================================================================
+
+# Web Framework
+Flask==3.0.0
+Flask-CORS==4.0.0
+
+# Database
+pymongo==4.6.0
+influxdb-client==1.38.0
+
+# MQTT
+paho-mqtt==1.6.1
+
+# WebSocket
+websockets==12.0
+
+# HTTP Requests
+requests==2.31.0
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# Production Server
+gunicorn==21.2.0
+
+# Utilities
+python-dateutil==2.8.2
+
+# Optional: Redis for caching
+redis==5.0.1
+
+# Optional: Async support
+aiohttp==3.8.5
+asyncio==3.4.3
+
+# ============================================================================
+# Installation:
+# pip install -r requirements-backend.txt
+# ============================================================================

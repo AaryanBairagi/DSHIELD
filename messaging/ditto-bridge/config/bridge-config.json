@@ -1,0 +1,41 @@
+{
+  "mqtt": {
+    "host": "localhost",
+    "port": 1883,
+    "username": null,
+    "password": null,
+    "ssl": false,
+    "reconnectPeriod": 5000,
+    "qos": 1
+  },
+  "ditto": {
+    "protocol": "http",
+    "wsProtocol": "ws",
+    "host": "localhost",
+    "port": 8080,
+    "apiVersion": 2,
+    "namespace": "org.dhsiled",
+    "username": "ditto",
+    "password": "ditto",
+    "useWebSocket": true,
+    "timeout": 10000
+  },
+  "bridge": {
+    "queueSize": 1000,
+    "batchProcessing": false,
+    "batchSize": 10,
+    "processingInterval": 100,
+    "logLevel": "info"
+  },
+  "retry": {
+    "maxAttempts": 3,
+    "delay": 1000,
+    "backoffMultiplier": 2
+  },
+  "monitoring": {
+    "enableStats": true,
+    "statsInterval": 60000,
+    "enableHealthCheck": true,
+    "healthCheckInterval": 30000
+  }
+}
