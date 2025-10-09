@@ -1,0 +1,98 @@
+# ============================================================================
+# DHSILED MQTT Configuration
+# MQTT broker and communication settings
+# ============================================================================
+
+mqtt:
+  # Broker Connection
+  broker:
+    host: "localhost"
+    port: 1883
+    protocol: "tcp"  # tcp, ssl, ws, wss
+    
+  # Authentication
+  auth:
+    enabled: false
+    username: null
+    password: null
+    
+  # SSL/TLS Configuration
+  ssl:
+    enabled: false
+    ca_certs: null
+    certfile: null
+    keyfile: null
+    cert_reqs: "CERT_REQUIRED"  # CERT_NONE, CERT_OPTIONAL, CERT_REQUIRED
+    tls_version: "TLSv1.2"
+    ciphers: null
+    
+  # Connection Settings
+  connection:
+    keepalive: 60
+    clean_session: true
+    client_id_prefix: "dhsiled_edge"
+    reconnect_on_failure: true
+    reconnect_delay: 5
+    max_reconnect_delay: 120
+    reconnect_delay_max_jitter: 5
+    
+  # Quality of Service
+  qos:
+    default: 1
+    status_messages: 1
+    alerts: 2
+    health_data: 0
+    
+  # Message Retention
+  retention:
+    status_messages: true
+    alerts: true
+    health_data: false
+    
+  # Topics Structure
+  topics:
+    # Publishing topics
+    publish:
+      status: "dhsiled/grids/{grid_id}/status"
+      alerts: "dhsiled/grids/{grid_id}/alerts"
+      health: "dhsiled/grids/{grid_id}/health"
+      analytics: "dhsiled/grids/{grid_id}/analytics"
+      heartbeat: "dhsiled/grids/{grid_id}/heartbeat"
+      
+    # Subscribing topics
+    subscribe:
+      commands: "dhsiled/grids/{grid_id}/commands"
+      system_broadcast: "dhsiled/system/broadcast"
+      firmware_updates: "dhsiled/system/firmware"
+      config_updates: "dhsiled/grids/{grid_id}/config"
+      
+  # Message Settings
+  messages:
+    max_inflight: 20
+    max_queued: 1000
+    message_retry: true
+    retry_interval: 5
+    max_retries: 3
+    
+  # Will Message (Last Will and Testament)
+  will:
+    enabled: true
+    topic: "dhsiled/grids/{grid_id}/status"
+    payload: '{"status": "offline", "reason": "unexpected_disconnect"}'
+    qos: 1
+    retain: true
+    
+  # Performance Tuning
+  performance:
+    message_batching: false
+    batch_size: 10
+    batch_timeout: 1000
+    compression: false
+    
+  # Logging
+  logging:
+    log_mqtt_messages: true
+    log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+    log_connection_events: true
+    log_publish_events: false
+    log_subscribe_events: true

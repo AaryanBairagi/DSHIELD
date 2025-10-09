@@ -1,0 +1,204 @@
+# ============================================================================
+# DHSILED ML Models Configuration
+# Machine Learning model settings and paths
+# ============================================================================
+
+models:
+  # People Counter (YOLOv8)
+  people_counter:
+    enabled: true
+    model_path: "models/yolov8n-crowd.pt"
+    model_type: "yolov8"
+    device: "cpu"  # cpu, cuda, mps
+    
+    # Inference Settings
+    inference:
+      confidence_threshold: 0.5
+      iou_threshold: 0.4
+      max_detections: 300
+      image_size: [640, 640]
+      half_precision: false
+      
+    # Detection Classes
+    classes:
+      enabled: [0]  # 0 = person in COCO dataset
+      names: ["person"]
+      
+    # Performance
+    performance:
+      batch_size: 1
+      enable_tensorrt: false
+      enable_optimization: true
+      
+    # Post-processing
+    post_processing:
+      min_box_area: 800
+      min_box_width: 20
+      min_box_height: 40
+      aspect_ratio_range: [0.3, 4.0]
+      
+  # Behavior Analyzer (LSTM)
+  behavior_analyzer:
+    enabled: true
+    model_path: "models/behavior_lstm.h5"
+    model_type: "lstm"
+    device: "cpu"
+    
+    # Sequence Settings
+    sequence:
+      length: 16
+      stride: 4
+      overlap: 8
+      
+    # Input Settings
+    input:
+      image_size: [224, 224]
+      normalization: true
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
+      
+    # Behavior Classes
+    classes:
+      - normal
+      - panic
+      - running
+      - fighting
+      - falling
+      - unusual_gathering
+      - crowd_surge
+      - evacuation
+      
+    # Detection Thresholds
+    thresholds:
+      normal: 0.5
+      panic: 0.7
+      running: 0.6
+      fighting: 0.75
+      falling: 0.65
+      unusual_gathering: 0.6
+      crowd_surge: 0.8
+      evacuation: 0.7
+      
+    # Temporal Smoothing
+    smoothing:
+      enabled: true
+      window_size: 5
+      method: "exponential"  # moving_average, exponential, gaussian
+      
+  # Emergency Detector (CNN)
+  emergency_detector:
+    enabled: true
+    model_path: "models/emergency_cnn.h5"
+    model_type: "cnn"
+    device: "cpu"
+    
+    # Input Settings
+    input:
+      image_size: [224, 224]
+      normalization: true
+      augmentation: false
+      
+    # Emergency Classes
+    classes:
+      - normal
+      - fire
+      - smoke
+      - accident
+      - medical_emergency
+      - structural_damage
+      - flood
+      - explosion
+      
+    # Detection Thresholds
+    thresholds:
+      fire: 0.7
+      smoke: 0.6
+      accident: 0.65
+      medical_emergency: 0.7
+      structural_damage: 0.8
+      flood: 0.75
+      explosion: 0.9
+      
+    # Color Analysis Enhancement
+    color_analysis:
+      enabled: true
+      fire_detection: true
+      smoke_detection: true
+      
+    # Alert Cooldown
+    cooldown:
+      enabled: true
+      duration: 30  # seconds
+      
+# ============================================================================
+# Model Loading & Caching
+# ============================================================================
+model_management:
+  # Auto-download missing models
+  auto_download: true
+  download_source: "https://models.dhsiled.org/"
+  
+  # Model Caching
+  cache:
+    enabled: true
+    cache_dir: "models/cache"
+    max_cache_size: 5000  # MB
+    
+  # Model Versioning
+  versioning:
+    enabled: true
+    check_updates: true
+    update_interval: 86400  # seconds (24 hours)
+    
+  # Fallback Models
+  fallback:
+    enabled: true
+    use_mock_models: true
+    
+# ============================================================================
+# Performance Optimization
+# ============================================================================
+optimization:
+  # Model Quantization
+  quantization:
+    enabled: false
+    precision: "int8"  # int8, fp16
+    
+  # Model Pruning
+  pruning:
+    enabled: false
+    sparsity: 0.5
+    
+  # Batch Processing
+  batching:
+    enabled: false
+    max_batch_size: 4
+    timeout: 100  # ms
+    
+  # GPU Settings
+  gpu:
+    memory_growth: true
+    memory_limit: 4096  # MB
+    allow_mixed_precision: false
+    
+# ============================================================================
+# Model Monitoring
+# ============================================================================
+monitoring:
+  # Performance Metrics
+  metrics:
+    track_inference_time: true
+    track_accuracy: true
+    track_memory_usage: true
+    
+  # Model Drift Detection
+  drift_detection:
+    enabled: false
+    threshold: 0.1
+    window_size: 1000
+    
+  # Logging
+  logging:
+    log_predictions: false
+    log_confidence_scores: true
+    log_errors: true
