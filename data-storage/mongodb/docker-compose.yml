@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # MongoDB - Primary Database
+  # ============================================================================
+  mongodb:
+    image: mongo:6.0
+    container_name: dhsiled-mongodb
+    restart: unless-stopped
+    
+    ports:
+      - "27017:27017"
+    
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: dhsiled_admin
+      MONGO_INITDB_ROOT_PASSWORD: dhsiled_secure_2024
+      MONGO_INITDB_DATABASE: dhsiled
+    
+    volumes:
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    
+    networks:
+      - dhsiled-network
+    
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================================================
+  # Mongo Express - Web UI for MongoDB
+  # ============================================================================
+  mongo-express:
+    image: mongo-express:1.0.0
+    container_name: dhsiled-mongo-express
+    restart: unless-stopped
+    
+    ports:
+      - "8082:8081"
+    
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: dhsiled_admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: dhsiled_secure_2024
+      ME_CONFIG_MONGODB_URL: mongodb://dhsiled_admin:dhsiled_secure_2024@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+    
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    
+    networks:
+      - dhsiled-network
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  dhsiled-network:
+    driver: bridge
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  mongodb-data:
+    driver: local
+  mongodb-config:
+    driver: local

@@ -1,0 +1,28 @@
+[Unit]
+Description=DHSILED Edge Processor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/opt/dhsiled
+ExecStart=/usr/bin/python3 /opt/dhsiled/src/main.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Environment variables
+Environment="GRID_ID={{ grid_id }}"
+Environment="MQTT_HOST={{ mqtt_broker }}"
+Environment="MQTT_PORT=1883"
+Environment="PYTHONUNBUFFERED=1"
+
+# Resource limits
+MemoryLimit=2G
+CPUQuota=80%
+
+[Install]
+WantedBy=multi-user.target

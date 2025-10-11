@@ -1,0 +1,93 @@
+{
+  "$jsonSchema": {
+    "bsonType": "object",
+    "required": ["grid_id", "timestamp", "people_count"],
+    "properties": {
+      "grid_id": {
+        "bsonType": "string",
+        "description": "Grid identifier (e.g., G01)"
+      },
+      "timestamp": {
+        "bsonType": "string",
+        "description": "ISO 8601 timestamp"
+      },
+      "people_count": {
+        "bsonType": "int",
+        "minimum": 0,
+        "description": "Number of people detected"
+      },
+      "people_locations": {
+        "bsonType": "array",
+        "items": {
+          "bsonType": "object",
+          "properties": {
+            "bbox": {
+              "bsonType": "array",
+              "items": { "bsonType": "number" }
+            },
+            "confidence": {
+              "bsonType": "double",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "center": {
+              "bsonType": "array",
+              "items": { "bsonType": "number" }
+            }
+          }
+        }
+      },
+      "crowd_density": {
+        "bsonType": "object",
+        "properties": {
+          "level": {
+            "enum": ["low", "normal", "moderate", "high", "critical"]
+          },
+          "percentage": {
+            "bsonType": "double",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "threshold_status": {
+            "enum": ["normal", "moderate", "high", "critical"]
+          }
+        }
+      },
+      "behavior_analysis": {
+        "bsonType": "object",
+        "properties": {
+          "alerts": { "bsonType": "array" },
+          "normal_behavior_confidence": {
+            "bsonType": "double",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      },
+      "emergency_detection": {
+        "bsonType": "object",
+        "properties": {
+          "status": {
+            "enum": ["clear", "warning", "emergency"]
+          },
+          "type": { "bsonType": ["string", "null"] },
+          "confidence": {
+            "bsonType": "double",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      },
+      "alerts": {
+        "bsonType": "array"
+      },
+      "processing_time": {
+        "bsonType": "double",
+        "minimum": 0
+      },
+      "model_performance": {
+        "bsonType": "object"
+      }
+    }
+  }
+}
