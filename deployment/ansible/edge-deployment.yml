@@ -1,0 +1,129 @@
+---
+# ============================================================================
+# DHSILED Edge Deployment Playbook
+# Deploys edge computing application to Raspberry Pi devices
+# ============================================================================
+
+- name: Deploy DHSILED Edge Computing Application
+  hosts: raspberry_pi
+  become: yes
+  
+  vars:
+    app_dir: /opt/dhsiled
+    backup_dir: /opt/dhsiled/backups
+    
+  tasks:
+    # ==========================================================================
+    # Pre-deployment Checks
+    # ==========================================================================
+    - name: Check if application directory exists
+      stat:
+        path: "{{ app_dir }}"
+      register: app_dir_stat
+      
+    - name: Fail if application not installed
+      fail:
+        msg: "Application directory not found. Run raspberry-pi-setup.yml first."
+      when: not app_dir_stat.stat.exists
+      
+    # ==========================================================================
+    # Backup Current Version
+    # ==========================================================================
+    - name: Create backup directory
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+        owner: pi
+        group: pi
+        
+    - name: Stop current service
+      systemd:
+        name: dhsiled-edge
+        state: stopped
+      ignore_errors: yes
+      
+    - name: Backup current application
+      archive:
+        path: "{{ app_dir }}"
+        dest: "{{ backup_dir}}/dhsiled_backup_{{ ansible_date_time.iso8601_basic_short }}.tar.gz"
+        exclude_path:
+          - "{{ app_dir }}/data"
+          - "{{ app_dir }}/models"
+      
+    # ==========================================================================
+    # Deploy New Version
+    # ==========================================================================
+    - name: Copy new application files
+      synchronize:
+        src: ../../edge-computing/
+        dest: "{{ app_dir }}/"
+        delete: yes
+        rsync_opts:
+          - "--exclude=data/*"
+          - "--exclude=models/*"
+          - "--exclude=*.pyc"
+          - "--exclude=__pycache__"
+      
+    - name: Set ownership
+      file:
+        path: "{{ app_dir }}"
+        owner: pi
+        group: pi
+        recurse: yes
+        
+    # ==========================================================================
+    # Update Dependencies
+    # ==========================================================================
+    - name: Update Python requirements
+      pip:
+        requirements: "{{ app_dir }}/requirements.txt"
+        executable: pip3
+        extra_args: --upgrade --no-cache-dir
+      become_user: pi
+      
+    # ==========================================================================
+    # Start Service
+    # ==========================================================================
+    - name: Start dhsiled-edge service
+      systemd:
+        name: dhsiled-edge
+        state: started
+        enabled: yes
+        daemon_reload: yes
+        
+    - name: Wait for service to stabilize
+      wait_for:
+        timeout: 10
+        
+    - name: Check service status
+      systemd:
+        name: dhsiled-edge
+      register: service_status
+      
+    - name: Display service status
+      debug:
+        msg: "Service Status: {{ service_status.status.ActiveState }}"
+        
+    # ==========================================================================
+    # Post-deployment Verification
+    # ==========================================================================
+    - name: Verify application is running
+      shell: journalctl -u dhsiled-edge --since "1 minute ago" | grep -i "started\|running"
+      register: verification
+      changed_when: false
+      failed_when: false
+      
+    - name: Display deployment result
+      debug:
+        msg: |
+          ============================================
+          Deployment Complete!
+          ============================================
+          Service Status: {{ service_status.status.ActiveState }}
+          
+          To view logs:
+          sudo journalctl -u dhsiled-edge -f
+          
+          To check status:
+          sudo systemctl status dhsiled-edge
+          ============================================

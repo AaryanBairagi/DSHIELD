@@ -1,0 +1,131 @@
+---
+# ============================================================================
+# DHSILED System Update Playbook
+# Updates system packages and DHSILED components
+# ============================================================================
+
+- name: Update DHSILED System Components
+  hosts: raspberry_pi
+  become: yes
+  
+  vars:
+    app_dir: /opt/dhsiled
+    
+  tasks:
+    # ==========================================================================
+    # System Updates
+    # ==========================================================================
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+        
+    - name: Upgrade system packages
+      apt:
+        upgrade: safe
+        autoremove: yes
+        autoclean: yes
+      register: apt_upgrade
+      
+    - name: Display upgrade summary
+      debug:
+        msg: "{{ apt_upgrade.stdout_lines }}"
+      when: apt_upgrade.changed
+      
+    # ==========================================================================
+    # Python Package Updates
+    # ==========================================================================
+    - name: Update pip
+      pip:
+        name: pip
+        state: latest
+        executable: pip3
+        
+    - name: Update Python packages
+      pip:
+        requirements: "{{ app_dir }}/requirements.txt"
+        executable: pip3
+        extra_args: --upgrade
+      become_user: pi
+      
+    # ==========================================================================
+    # Security Updates
+    # ==========================================================================
+    - name: Check for security updates
+      shell: apt list --upgradable 2>/dev/null | grep -i security | wc -l
+      register: security_updates
+      changed_when: false
+      
+    - name: Display security updates count
+      debug:
+        msg: "{{ security_updates.stdout }} security updates available"
+        
+    - name: Apply security updates
+      apt:
+        upgrade: dist
+        force_apt_get: yes
+      when: security_updates.stdout | int > 0
+      
+    # ==========================================================================
+    # Cleanup
+    # ==========================================================================
+    - name: Remove unused packages
+      apt:
+        autoremove: yes
+        purge: yes
+        
+    - name: Clean apt cache
+      apt:
+        autoclean: yes
+        
+    - name: Remove old Python cache files
+      find:
+        paths: "{{ app_dir }}"
+        patterns: "*.pyc,__pycache__"
+        recurse: yes
+      register: cache_files
+      
+    - name: Delete Python cache files
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ cache_files.files }}"
+      when: cache_files.matched > 0
+      
+    # ==========================================================================
+    # Service Restart
+    # ==========================================================================
+    - name: Restart DHSILED service
+      systemd:
+        name: dhsiled-edge
+        state: restarted
+      when: apt_upgrade.changed
+      
+    - name: Check if reboot is required
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_required
+      
+    - name: Display reboot requirement
+      debug:
+        msg: "System reboot is required!"
+      when: reboot_required.stat.exists
+      
+    # ==========================================================================
+    # Verification
+    # ==========================================================================
+    - name: Verify service status
+      systemd:
+        name: dhsiled-edge
+      register: service_status
+      
+    - name: Display final status
+      debug:
+        msg: |
+          ============================================
+          System Update Complete!
+          ============================================
+          Security Updates Applied: {{ security_updates.stdout }}
+          Service Status: {{ service_status.status.ActiveState }}
+          Reboot Required: {{ reboot_required.stat.exists }}
+          ============================================

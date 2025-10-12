@@ -1,0 +1,153 @@
+# ============================================================================
+# Alertmanager Configuration for DHSILED
+# ============================================================================
+
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'dhsiled-alerts@example.com'
+  smtp_auth_username: 'dhsiled-alerts@example.com'
+  smtp_auth_password: 'your-password-here'
+
+# Templates
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Route tree
+route:
+  receiver: 'default-receiver'
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 5s
+      repeat_interval: 1h
+      continue: true
+    
+    # High severity alerts
+    - match:
+        severity: high
+      receiver: 'high-alerts'
+      group_wait: 30s
+      repeat_interval: 2h
+    
+    # Warning alerts
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 2m
+      repeat_interval: 6h
+    
+    # Crowd monitoring alerts
+    - match:
+        component: crowd-monitoring
+      receiver: 'crowd-alerts'
+      group_wait: 10s
+      repeat_interval: 30m
+    
+    # Emergency alerts - highest priority
+    - match:
+        component: emergency-detection
+      receiver: 'emergency-alerts'
+      group_wait: 0s
+      repeat_interval: 15m
+
+# Inhibition rules
+inhibit_rules:
+  # Inhibit warning if critical alert is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'grid_id']
+  
+  # Inhibit high if critical alert is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'high'
+    equal: ['alertname', 'grid_id']
+
+# Receivers
+receivers:
+  # Default receiver
+  - name: 'default-receiver'
+    email_configs:
+      - to: 'ops-team@example.com'
+        headers:
+          Subject: '[DHSILED] {{ .GroupLabels.alertname }}'
+    webhook_configs:
+      - url: 'http://backend:5000/api/alerts/webhook'
+        send_resolved: true
+
+  # Critical alerts - multiple channels
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'critical-alerts@example.com'
+        headers:
+          Subject: '🚨 [CRITICAL] {{ .GroupLabels.alertname }}'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#critical-alerts'
+        title: '🚨 Critical Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ end }}'
+    webhook_configs:
+      - url: 'http://backend:5000/api/alerts/critical'
+        send_resolved: true
+    # SMS/Phone call configuration (example)
+    # pagerduty_configs:
+    #   - service_key: 'your-pagerduty-key'
+
+  # High severity alerts
+  - name: 'high-alerts'
+    email_configs:
+      - to: 'high-alerts@example.com'
+        headers:
+          Subject: '⚠️ [HIGH] {{ .GroupLabels.alertname }}'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#high-alerts'
+        title: '⚠️ High Priority Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ end }}'
+
+  # Warning alerts
+  - name: 'warning-alerts'
+    email_configs:
+      - to: 'warnings@example.com'
+        headers:
+          Subject: '⚡ [WARNING] {{ .GroupLabels.alertname }}'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#warnings'
+
+  # Crowd monitoring alerts
+  - name: 'crowd-alerts'
+    email_configs:
+      - to: 'crowd-monitoring@example.com'
+        headers:
+          Subject: '👥 [CROWD] {{ .GroupLabels.alertname }}'
+    webhook_configs:
+      - url: 'http://backend:5000/api/alerts/crowd'
+        send_resolved: true
+
+  # Emergency alerts - all channels
+  - name: 'emergency-alerts'
+    email_configs:
+      - to: 'emergency@example.com,security@example.com'
+        headers:
+          Subject: '🚨🚨 [EMERGENCY] {{ .GroupLabels.alertname }} 🚨🚨'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#emergency'
+        title: '🚨 EMERGENCY ALERT'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ .Annotations.description }}\n{{ end }}'
+        color: 'danger'
+    webhook_configs:
+      - url: 'http://backend:5000/api/alerts/emergency'
+        send_resolved: true

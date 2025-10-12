@@ -1,0 +1,195 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "dhsiled-overview",
+    "title": "DHSILED System Overview",
+    "tags": ["dhsiled", "overview"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "5s",
+    
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "type": "stat",
+        "title": "Total People in Stadium",
+        "targets": [
+          {
+            "expr": "sum(crowd_people_count)",
+            "legendFormat": "Total People",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "values": false,
+            "calcs": ["lastNotNull"]
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 5000, "color": "yellow"},
+                {"value": 8000, "color": "red"}
+              ]
+            },
+            "unit": "short"
+          }
+        }
+      },
+      
+      {
+        "id": 2,
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "type": "stat",
+        "title": "Active Alerts",
+        "targets": [
+          {
+            "expr": "count(ALERTS{alertstate=\"firing\"})",
+            "legendFormat": "Active Alerts",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 1, "color": "yellow"},
+                {"value": 5, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      
+      {
+        "id": 3,
+        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 8},
+        "type": "graph",
+        "title": "Crowd Density Over Time",
+        "targets": [
+          {
+            "expr": "crowd_people_count",
+            "legendFormat": "{{ grid_id }}",
+            "refId": "A"
+          }
+        ],
+        "xaxis": {"mode": "time"},
+        "yaxes": [
+          {"format": "short", "label": "People Count"},
+          {"format": "short"}
+        ],
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "stack": false
+      },
+      
+      {
+        "id": 4,
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 18},
+        "type": "gauge",
+        "title": "Average CPU Temperature",
+        "targets": [
+          {
+            "expr": "avg(edge_cpu_temperature_celsius)",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 70, "color": "yellow"},
+                {"value": 80, "color": "red"}
+              ]
+            },
+            "unit": "celsius",
+            "min": 0,
+            "max": 100
+          }
+        }
+      },
+      
+      {
+        "id": 5,
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 18},
+        "type": "gauge",
+        "title": "Average Memory Usage",
+        "targets": [
+          {
+            "expr": "avg(edge_memory_usage_percent)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 80, "color": "yellow"},
+                {"value": 90, "color": "red"}
+              ]
+            },
+            "unit": "percent",
+            "min": 0,
+            "max": 100
+          }
+        }
+      },
+      
+      {
+        "id": 6,
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 18},
+        "type": "piechart",
+        "title": "Density Distribution",
+        "targets": [
+          {
+            "expr": "count by(density_level) (crowd_density_level)",
+            "legendFormat": "{{ density_level }}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right"
+          }
+        }
+      }
+    ],
+    
+    "templating": {
+      "list": []
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
+    }
+  }
+}

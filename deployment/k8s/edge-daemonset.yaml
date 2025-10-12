@@ -1,0 +1,207 @@
+# ============================================================================
+# DHSILED Edge Processor DaemonSet
+# Deploys edge processor to each node (for distributed deployment)
+# ============================================================================
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dhsiled-edge-processor
+  namespace: dhsiled
+  labels:
+    app: dhsiled
+    component: edge-processor
+spec:
+  selector:
+    matchLabels:
+      app: dhsiled
+      component: edge-processor
+  
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  
+  template:
+    metadata:
+      labels:
+        app: dhsiled
+        component: edge-processor
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    
+    spec:
+      # Node selector for edge devices
+      nodeSelector:
+        dhsiled.io/edge-node: "true"
+      
+      # Host network for camera access
+      hostNetwork: true
+      
+      containers:
+      - name: edge-processor
+        image: dhsiled/edge-processor:latest
+        imagePullPolicy: Always
+        
+        # Environment variables
+        env:
+        - name: GRID_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: MQTT_HOST
+          value: "mosquitto.dhsiled.svc.cluster.local"
+        - name: MQTT_PORT
+          value: "1883"
+        - name: LOG_LEVEL
+          value: "INFO"
+        
+        # Resource limits
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        
+        # Volume mounts
+        volumeMounts:
+        - name: video-device
+          mountPath: /dev/video0
+        - name: models
+          mountPath: /app/models
+          readOnly: true
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+        - name: data
+          mountPath: /app/data
+        
+        # Liveness probe
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; sys.exit(0)"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        
+        # Readiness probe
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; sys.exit(0)"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # Security context
+        securityContext:
+          privileged: true  # Required for camera access
+          capabilities:
+            add:
+            - SYS_ADMIN
+      
+      volumes:
+      # Camera device
+      - name: video-device
+        hostPath:
+          path: /dev/video0
+          type: CharDevice
+      
+      # Models persistent volume
+      - name: models
+        persistentVolumeClaim:
+          claimName: dhsiled-models-pvc
+      
+      # Configuration
+      - name: config
+        configMap:
+          name: dhsiled-edge-config
+      
+      # Data storage
+      - name: data
+        hostPath:
+          path: /var/lib/dhsiled/edge-data
+          type: DirectoryOrCreate
+      
+      # Restart policy
+      restartPolicy: Always
+      
+      # DNS policy
+      dnsPolicy: ClusterFirstWithHostNet
+
+---
+# ============================================================================
+# ConfigMap for Edge Processor
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dhsiled-edge-config
+  namespace: dhsiled
+data:
+  grid_config.yaml: |
+    grid:
+      id: "${GRID_ID}"
+      zone_type: "stand"
+      area_sqm: 750
+      capacity: 200
+    
+    density_thresholds:
+      normal: 60
+      moderate: 100
+      high: 150
+      critical: 200
+    
+    camera:
+      device_index: 0
+      width: 1920
+      height: 1080
+      fps: 30
+    
+    models:
+      people_counter: "models/yolov8n.pt"
+      behavior_analyzer: "models/behavior_lstm.h5"
+      emergency_detector: "models/emergency_cnn.h5"
+      confidence_threshold: 0.5
+    
+    mqtt:
+      host: "mosquitto.dhsiled.svc.cluster.local"
+      port: 1883
+      keepalive: 60
+      qos: 1
+    
+    processing:
+      enable_people_counting: true
+      enable_behavior_analysis: true
+      enable_emergency_detection: true
+    
+    logging:
+      level: "INFO"
+      console_output: true
+
+---
+# ============================================================================
+# PersistentVolumeClaim for ML Models
+# ============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dhsiled-models-pvc
+  namespace: dhsiled
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: standard

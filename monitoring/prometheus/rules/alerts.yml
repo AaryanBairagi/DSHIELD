@@ -1,0 +1,188 @@
+# ============================================================================
+# Prometheus Alert Rules for DHSILED
+# ============================================================================
+
+groups:
+  # ==========================================================================
+  # Edge Processor Alerts
+  # ==========================================================================
+  - name: edge_processor_alerts
+    interval: 30s
+    rules:
+      - alert: EdgeProcessorDown
+        expr: up{job="edge-processors"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: edge-processor
+        annotations:
+          summary: "Edge processor {{ $labels.grid_id }} is down"
+          description: "Edge processor {{ $labels.grid_id }} has been down for more than 2 minutes."
+
+      - alert: HighCPUUsage
+        expr: edge_cpu_usage_percent > 90
+        for: 5m
+        labels:
+          severity: warning
+          component: edge-processor
+        annotations:
+          summary: "High CPU usage on {{ $labels.grid_id }}"
+          description: "CPU usage is {{ $value }}% on {{ $labels.grid_id }}."
+
+      - alert: HighMemoryUsage
+        expr: edge_memory_usage_percent > 95
+        for: 5m
+        labels:
+          severity: critical
+          component: edge-processor
+        annotations:
+          summary: "High memory usage on {{ $labels.grid_id }}"
+          description: "Memory usage is {{ $value }}% on {{ $labels.grid_id }}."
+
+      - alert: HighCPUTemperature
+        expr: edge_cpu_temperature_celsius > 80
+        for: 3m
+        labels:
+          severity: warning
+          component: edge-processor
+        annotations:
+          summary: "High CPU temperature on {{ $labels.grid_id }}"
+          description: "CPU temperature is {{ $value }}°C on {{ $labels.grid_id }}."
+
+      - alert: CriticalCPUTemperature
+        expr: edge_cpu_temperature_celsius > 85
+        for: 1m
+        labels:
+          severity: critical
+          component: edge-processor
+        annotations:
+          summary: "Critical CPU temperature on {{ $labels.grid_id }}"
+          description: "CPU temperature is {{ $value }}°C on {{ $labels.grid_id }}. Immediate action required!"
+
+  # ==========================================================================
+  # Crowd Monitoring Alerts
+  # ==========================================================================
+  - name: crowd_monitoring_alerts
+    interval: 15s
+    rules:
+      - alert: CriticalCrowdDensity
+        expr: crowd_people_count > 180
+        for: 1m
+        labels:
+          severity: critical
+          component: crowd-monitoring
+        annotations:
+          summary: "Critical crowd density in {{ $labels.grid_id }}"
+          description: "People count is {{ $value }} in {{ $labels.grid_id }}. Critical threshold exceeded!"
+
+      - alert: HighCrowdDensity
+        expr: crowd_people_count > 150
+        for: 2m
+        labels:
+          severity: high
+          component: crowd-monitoring
+        annotations:
+          summary: "High crowd density in {{ $labels.grid_id }}"
+          description: "People count is {{ $value }} in {{ $labels.grid_id }}."
+
+      - alert: EmergencyDetected
+        expr: emergency_status == 1
+        for: 10s
+        labels:
+          severity: critical
+          component: emergency-detection
+        annotations:
+          summary: "Emergency detected in {{ $labels.grid_id }}"
+          description: "Emergency type: {{ $labels.emergency_type }} in {{ $labels.grid_id }}."
+
+      - alert: AbnormalBehaviorDetected
+        expr: behavior_anomaly_detected == 1
+        for: 30s
+        labels:
+          severity: high
+          component: behavior-analysis
+        annotations:
+          summary: "Abnormal behavior in {{ $labels.grid_id }}"
+          description: "Behavior: {{ $labels.behavior_type }} detected in {{ $labels.grid_id }}."
+
+  # ==========================================================================
+  # System Health Alerts
+  # ==========================================================================
+  - name: system_health_alerts
+    interval: 1m
+    rules:
+      - alert: ServiceDown
+        expr: up{job=~"backend|websocket|mosquitto"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} service has been down for more than 2 minutes."
+
+      - alert: HighDiskUsage
+        expr: disk_usage_percent > 85
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }}."
+
+      - alert: DatabaseConnectionLost
+        expr: mongodb_connections_current < 1
+        for: 2m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Lost connection to MongoDB"
+          description: "MongoDB has no active connections."
+
+      - alert: MQTTBrokerOverload
+        expr: mqtt_messages_queued > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: mqtt
+        annotations:
+          summary: "MQTT broker message queue is full"
+          description: "{{ $value }} messages queued in MQTT broker."
+
+  # ==========================================================================
+  # Performance Alerts
+  # ==========================================================================
+  - name: performance_alerts
+    interval: 1m
+    rules:
+      - alert: SlowProcessingTime
+        expr: model_inference_time_seconds > 1.0
+        for: 3m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "Slow processing time on {{ $labels.grid_id }}"
+          description: "Model inference taking {{ $value }}s on {{ $labels.grid_id }}."
+
+      - alert: HighAPILatency
+        expr: http_request_duration_seconds{quantile="0.95"} > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API latency"
+          description: "95th percentile latency is {{ $value }}s."
+
+      - alert: LowFrameRate
+        expr: camera_fps < 20
+        for: 2m
+        labels:
+          severity: warning
+          component: camera
+        annotations:
+          summary: "Low frame rate on {{ $labels.grid_id }}"
+          description: "Camera FPS is {{ $value }} on {{ $labels.grid_id }}."
